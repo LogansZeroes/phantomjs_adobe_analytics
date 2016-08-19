@@ -67,6 +67,7 @@ page.onResourceRequested = function(requestData, networkRequest) {
             matchArr.forEach(function(e) {
                 var key = e.match(/(.+)=(.+)/)[1];
                 var value = decodeURIComponent(e.match(/(.+)=(.+)/)[2]);
+                // console.log('key is', key, ':', value)
                 //prop8 is the traffic variable that holds the href of a link clicked
                 if ((/^c8/).test(key)) {
                     tempValue = value;
@@ -80,20 +81,20 @@ page.onResourceRequested = function(requestData, networkRequest) {
                     tempValue = undefined;
                     m++;
                     removeTimers();
-                    pageTimers = [setTimeout(nextUrl, 20000)];
+                    pageTimers = [setTimeout(nextUrl, 60000)];
                 }
             });
         } 
         //abort request if the request is not adobe analytics, current URL, or javascript
         else if (!(addressRegex).test(requestData.url)) {
             removeTimers();
-            pageTimers = [setTimeout(nextUrl, 20000)];
             networkRequest.abort();
+            pageTimers = [setTimeout(nextUrl, 60000)];
         } 
         //if it matches regex, allow but reset timeouts
         else {
             removeTimers();
-            pageTimers = [setTimeout(nextUrl, 20000)];
+            pageTimers = [setTimeout(nextUrl, 60000)];
         }
     }
 };
@@ -119,7 +120,7 @@ function handleUrl(theUrl) {
             console.log('Wild', currUrl, 'appeared!');
 
             //evaluate the page to click and process all links
-            page.evaluate(function(theUrl) {
+            linksToClick = page.evaluate(function(theUrl) {
                 //all links with href on page
                 linksToClick = document.querySelectorAll('a[href]');
                 console.log('Gotta Catch \'Em All:', linksToClick.length);
@@ -134,6 +135,8 @@ function handleUrl(theUrl) {
                         _A.core.processTic(event);
                     }
                 }
+
+                return linksToClick;
             }, theUrl);
 
             //initialize qaResults key to all the anchors with href
@@ -148,13 +151,43 @@ function handleUrl(theUrl) {
             //if the page loaded but there are no hrefs, the value will hold "PAGE IS BROKEN"
             if(qaResults[theUrl].length === 0) qaResults[theUrl] = ["PAGE IS BROKEN"]
 
-            //click all the href links
+            // click all the href links
             page.evaluate(function() {
                 for (var i = 0; i < linksToClick.length; i++) {
                     //not clicking all links right away because there are too many requests, bad things happen
-                    setTimeout(linksToClick[i].click(), 1000);
+                    // clickTimers.push(setTimeout(linksToClick[i].click(), 10000))
+                    setTimeout(linksToClick[i].click(), 10000);
                 }
             })
+            // console.log('linksToClick', linksToClick)
+            
+            // function clickSlowly(ind){
+            //     // console.log('click slowly', ind)
+            //     setTimeout(function(){
+            //         page.evaluate(function(ind) {
+            //             console.log(ind)
+
+            //             linksToClick[ind].click();
+            //         }, ind)
+            //     // }, 1000)
+            //     }, 1000 + (3000 * ind))
+            // }
+
+            // for (var i = 0; i < linksToClick.length; i++) {
+                
+            //     clickSlowly(i);
+
+            //     // (function(ind){
+            //     //     setTimeout(function(){
+            //     //         console.log('setTimeout', ind)
+            //     //         page.evaluate(function() {
+            //     //             console.log(ind)
+
+            //     //             linksToClick[ind].click();
+            //     //         })
+            //     //     }, 1000 + (1000 * ind))
+            //     // })(i);
+            // }
         }
     });
 };
@@ -203,7 +236,7 @@ function nextUrl() {
         linksToClick = undefined;
         urlEvars = [];
         //process current URL right away and set up next URL just in case
-        pageTimers = [setTimeout(nextUrl, 20000)];
+        pageTimers = [setTimeout(nextUrl, 40000)];
         pageTimers = [setTimeout(function(){handleUrl(currUrl, qaResults)}, 0)];
     }
 }
